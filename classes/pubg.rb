@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'httparty'
-require 'yaml'
+
 
 CONFIG = YAML.load_file('app.yml')
 class Pubg
@@ -50,48 +50,45 @@ class Pubg
     { name: 'skorpion', api_name: 'Item_Weapon_vz61Skorpion_C' }
   ]
   attr_accessor :gametag
-  attr_reader :id
+  attr_accessor :userid
   attr_reader :stats
   attr_reader :mastery
 
-  def initialize(gametag)
+  def initialize(gametag, userid = nil)
     @gametag = gametag
-    @id = nil
+    @userid = userid
     @stats = {}
     @mastery = {}
   end
 
   def fund?
-    if id.nil?
+    if userid.nil?
       false
     else
       true
     end
   end
 
-  
-  
-
   def get
-    ask_id
-    # TODO: separate response
+    ask_id if userid.nil?
+
     if fund? && ask_stats && ask_mastery
       true
     else
       false
     end
-   end
+  end
 
   private
 
   def ask_id
     response = request("https://api.pubg.com/shards/xbox/players?filter[playerNames]=#{gametag}")
-    @id = response[0]['id'] if response
+    @userid = response[0]['id'] if response
   end
 
   def ask_stats
     if fund?
-      response = request("https://api.pubg.com/shards/xbox/players/#{id}/seasons/lifetime")
+      response = request("https://api.pubg.com/shards/xbox/players/#{userid}/seasons/lifetime")
       if response
         response = response['attributes']['gameModeStats']
         seter_stats(response)
@@ -107,7 +104,7 @@ class Pubg
 
   def ask_mastery
     if fund?
-      response = request("https://api.pubg.com/shards/xbox/players/#{id}/weapon_mastery")
+      response = request("https://api.pubg.com/shards/xbox/players/#{userid}/weapon_mastery")
       if response
         seter_mastery(response['attributes']['weaponSummaries'])
         true
@@ -120,6 +117,7 @@ class Pubg
   end
 
   def request(url)
+    # puts '++++CALL PUBG API++++++++++++++'
     response = HTTParty.get(url, headers: {
                               'Content-Type' => 'application/json',
                               'accept' => 'application/vnd.api+json',
