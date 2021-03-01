@@ -9,6 +9,7 @@ REFRESHMENT_TIME = 3600
 Dir[settings.root + '/classes/*.rb'].sort.each { |file| require file }
 get '/player/:nametag' do
   content_type :json
+  headers 'Access-Control-Allow-Origin' => '*'
   nametag = params[:nametag]
   redis = Redis.new(nametag)
 

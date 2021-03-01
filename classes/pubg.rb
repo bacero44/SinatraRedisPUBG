@@ -2,11 +2,11 @@
 
 require 'httparty'
 
-
 CONFIG = YAML.load_file('app.yml')
 class Pubg
   @@game_types = %w[duo solo squad]
   @@weapons = [
+    { name: 'akm', api_name: 'Item_Weapon_AK47_C' },
     { name: 'aug', api_name: 'Item_Weapon_AUG_C' },
     { name: 'awm', api_name: 'Item_Weapon_AWM_C' },
     { name: 'barreta', api_name: 'Item_Weapon_Berreta686_C' },
@@ -34,7 +34,7 @@ class Pubg
     { name: 'mosin nagant', api_name: 'Item_Weapon_Mosin_C' },
     { name: 'nagant m1895', api_name: 'Item_Weapon_NagantM1895_C' },
     { name: 'qbu', api_name: 'Item_Weapon_QBU88_C' },
-    { name: 'qbz', api_name: 'Item_Weapon_QBZ95_Cduo' },
+    { name: 'qbz', api_name: 'Item_Weapon_QBZ95_C' },
     { name: 'r45', api_name: 'Item_Weapon_Rhino_C' },
     { name: 'scar-l', api_name: 'Item_Weapon_SCAR-L_C' },
     { name: 'sks', api_name: 'Item_Weapon_SKS_C' },
@@ -57,8 +57,8 @@ class Pubg
   def initialize(gametag, userid = nil)
     @gametag = gametag
     @userid = userid
-    @stats = {}
-    @mastery = {}
+    @stats = []
+    @mastery = []
   end
 
   def fund?
@@ -134,31 +134,34 @@ class Pubg
     #  TODO: simplify this method
     @@weapons.each do |w|
       m = mastery_list[w[:api_name]]
-      mastery[w[:name]] = {
-        level: m.nil? ? 0 : m['LevelCurrent'],
-        head_shots: m.nil? ? 0 : m['StatsTotal']['HeadShots'],
-        most_head_shots: m.nil? ? 0 : m['StatsTotal']['MostHeadShotsInAGame'],
-        kills: m.nil? ? 0 : m['StatsTotal']['Kills'],
-        most_kills: m.nil? ? 0 : m['StatsTotal']['MostKillsInAGame'],
-        groggies: m.nil? ? 0 : m['StatsTotal']['Groggies'],
-        most_groggies: m.nil? ? 0 : m['StatsTotal']['MostGroggiesInAGame']
-      }
+
+      mastery.push({
+                     name: w[:name],
+                     level: m.nil? ? 0 : m['LevelCurrent'],
+                     head_shots: m.nil? ? 0 : m['StatsTotal']['HeadShots'],
+                     most_head_shots: m.nil? ? 0 : m['StatsTotal']['MostHeadShotsInAGame'],
+                     kills: m.nil? ? 0 : m['StatsTotal']['Kills'],
+                     most_kills: m.nil? ? 0 : m['StatsTotal']['MostKillsInAGame'],
+                     groggies: m.nil? ? 0 : m['StatsTotal']['Groggies'],
+                     most_groggies: m.nil? ? 0 : m['StatsTotal']['MostGroggiesInAGame']
+                   })
     end
   end
 
   def seter_stats(stats_list)
     @@game_types.each do |g|
-      stats[g] = {
-        assists: stats_list[g]['assists'],
-        damage: stats_list[g]['damageDealt'],
-        kills: stats_list[g]['kills'],
-        longest_kill: stats_list[g]['longestKill'],
-        max_kill_streaks: stats_list[g]['maxKillStreaks'],
-        team_kills: stats_list[g]['teamKills'],
-        tops_ten: stats_list[g]['top10s'],
-        wins: stats_list[g]['wins'],
-        head_shot_kills: stats_list[g]['headshotKills']
-      }
+      stats.push({
+                   type_name: g,
+                   assists: stats_list[g]['assists'],
+                   damage: stats_list[g]['damageDealt'],
+                   kills: stats_list[g]['kills'],
+                   longest_kill: stats_list[g]['longestKill'],
+                   max_kill_streaks: stats_list[g]['maxKillStreaks'],
+                   team_kills: stats_list[g]['teamKills'],
+                   tops_ten: stats_list[g]['top10s'],
+                   wins: stats_list[g]['wins'],
+                   head_shot_kills: stats_list[g]['headshotKills']
+                 })
     end
   end
 end
