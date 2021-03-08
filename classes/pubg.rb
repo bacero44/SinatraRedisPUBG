@@ -83,7 +83,7 @@ class Pubg
     private
 
     def request(url)
-      puts '++++CALL PUBG API++++++++++++++'
+      # puts '++++CALL PUBG API++++++++++++++'
       response = HTTParty.get(url, headers: {
                                 'Content-Type' => 'application/json',
                                 'accept' => 'application/vnd.api+json',

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # 3600 === 1 hour
-REFRESHMENT_TIME = 10
+REFRESHMENT_TIME = 3600
 class Player
   attr_reader :nametag
   attr_reader :userid
