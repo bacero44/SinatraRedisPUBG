@@ -49,46 +49,18 @@ class Pubg
     { name: 'winchester', api_name: 'Item_Weapon_Winchester_C' },
     { name: 'skorpion', api_name: 'Item_Weapon_vz61Skorpion_C' }
   ]
-  attr_accessor :gametag
-  attr_accessor :userid
-  attr_reader :stats
-  attr_reader :mastery
-  attr_reader :weapons
 
-  def initialize(gametag, userid = nil)
-    @gametag = gametag
-    @userid = userid
-    @stats = []
-    @mastery = []
-  end
-
-  def fund?
-    if userid.nil?
-      false
-    else
-      true
+  class << self
+    def get_player(nametag)
+      response = request("https://api.pubg.com/shards/xbox/players?filter[playerNames]=#{nametag}")
+      if response
+        response[0]['id']
+      else
+        false
+      end
     end
-  end
 
-  def get
-    ask_id if userid.nil?
-
-    if fund? && ask_stats && ask_mastery
-      true
-    else
-      false
-    end
-  end
-
-  private
-
-  def ask_id
-    response = request("https://api.pubg.com/shards/xbox/players?filter[playerNames]=#{gametag}")
-    @userid = response[0]['id'] if response
-  end
-
-  def ask_stats
-    if fund?
+    def get_stats(userid)
       response = request("https://api.pubg.com/shards/xbox/players/#{userid}/seasons/lifetime")
       if response
         response = response['attributes']['gameModeStats']
@@ -96,73 +68,69 @@ class Pubg
       else
         false
       end
-
-      true
-    else
-      false
     end
-  end
 
-  def ask_mastery
-    if fund?
+    def get_mastery(userid)
       response = request("https://api.pubg.com/shards/xbox/players/#{userid}/weapon_mastery")
       if response
-        seter_mastery(response['attributes']['weaponSummaries'])
-        true
+        response = response['attributes']['weaponSummaries']
+        seter_mastery(response)
       else
         false
       end
-    else
-      false
     end
-  end
 
-  def request(url)
-    # puts '++++CALL PUBG API++++++++++++++'
-    response = HTTParty.get(url, headers: {
-                              'Content-Type' => 'application/json',
-                              'accept' => 'application/vnd.api+json',
-                              'Authorization' => "Bearer #{CONFIG['pubg_api_key']}"
-                            })
-    if response.code == 200
-      response['data']
-    else
-      false
+    private
+
+    def request(url)
+      puts '++++CALL PUBG API++++++++++++++'
+      response = HTTParty.get(url, headers: {
+                                'Content-Type' => 'application/json',
+                                'accept' => 'application/vnd.api+json',
+                                'Authorization' => "Bearer #{CONFIG['pubg_api_key']}"
+                              })
+      if response.code == 200
+        response['data']
+      else
+        false
+      end
     end
-  end
 
-  def seter_mastery(mastery_list)
-    #  TODO: simplify this method
-    @@weapons.each do |w|
-      m = mastery_list[w[:api_name]]
-
-      mastery.push({
-                     name: w[:name],
-                     level: m.nil? ? 0 : m['LevelCurrent'],
-                     head_shots: m.nil? ? 0 : m['StatsTotal']['HeadShots'],
-                     most_head_shots: m.nil? ? 0 : m['StatsTotal']['MostHeadShotsInAGame'],
-                     kills: m.nil? ? 0 : m['StatsTotal']['Kills'],
-                     most_kills: m.nil? ? 0 : m['StatsTotal']['MostKillsInAGame'],
-                     groggies: m.nil? ? 0 : m['StatsTotal']['Groggies'],
-                     most_groggies: m.nil? ? 0 : m['StatsTotal']['MostGroggiesInAGame']
+    def seter_stats(payload)
+      stats = []
+      @@game_types.each do |g|
+        stats.push({
+                     type_name: g,
+                     assists: payload[g]['assists'],
+                     damage: payload[g]['damageDealt'],
+                     kills: payload[g]['kills'],
+                     longest_kill: payload[g]['longestKill'],
+                     max_kill_streaks: payload[g]['maxKillStreaks'],
+                     team_kills: payload[g]['teamKills'],
+                     tops_ten: payload[g]['top10s'],
+                     wins: payload[g]['wins'],
+                     head_shot_kills: payload[g]['headshotKills']
                    })
+      end
+      stats
     end
-  end
 
-  def seter_stats(stats_list)
-    @@game_types.each do |g|
-      stats.push({
-                   type_name: g,
-                   assists: stats_list[g]['assists'],
-                   damage: stats_list[g]['damageDealt'],
-                   kills: stats_list[g]['kills'],
-                   longest_kill: stats_list[g]['longestKill'],
-                   max_kill_streaks: stats_list[g]['maxKillStreaks'],
-                   team_kills: stats_list[g]['teamKills'],
-                   tops_ten: stats_list[g]['top10s'],
-                   wins: stats_list[g]['wins'],
-                   head_shot_kills: stats_list[g]['headshotKills']
-                 })
+    def seter_mastery(payload)
+      mastery = []
+      @@weapons.each do |w|
+        m = payload[w[:api_name]]
+        mastery.push({
+                       name: w[:name],
+                       level: m.nil? ? 0 : m['LevelCurrent'],
+                       head_shots: m.nil? ? 0 : m['StatsTotal']['HeadShots'],
+                       most_head_shots: m.nil? ? 0 : m['StatsTotal']['MostHeadShotsInAGame'],
+                       kills: m.nil? ? 0 : m['StatsTotal']['Kills'],
+                       most_kills: m.nil? ? 0 : m['StatsTotal']['MostKillsInAGame'],
+                       groggies: m.nil? ? 0 : m['StatsTotal']['Groggies'],
+                       most_groggies: m.nil? ? 0 : m['StatsTotal']['MostGroggiesInAGame']
+                     })
+      end
+      mastery
     end
   end
 end
