@@ -4,43 +4,21 @@ require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'json'
 require 'yaml'
-# 3600 === 1 hour
-REFRESHMENT_TIME = 3600
+require_relative('helpers')
+
 Dir[settings.root + '/classes/*.rb'].sort.each { |file| require file }
-get '/player/:nametag' do
+before do
   content_type :json
   headers 'Access-Control-Allow-Origin' => '*'
-  nametag = params[:nametag]
-  redis = Redis.new(nametag)
-
-  if redis.fund?
-
-    if (Time.now - Time.parse(redis.date.to_s)) / REFRESHMENT_TIME > 2
-      pubg = Pubg.new(nametag, redis.userid)
-      pubg.get
-      redis.body = { "mastery": pubg.mastery, "stats": pubg.stats }
-      redis.update
-    end
-    status 200
-    return redis.body.to_json
-
+end
+get '/player/:nametag' do
+  player = Player.new(params[:nametag])
+  if player.fund?
+    json_response({ stats: player.stats, mastery: player.mastery }, 200)
   else
-    pubg = Pubg.new(nametag)
-    pubg.get
-    if pubg.fund?
-
-      redis.body = { "mastery": pubg.mastery, "stats": pubg.stats }
-      redis.userid = pubg.userid
-      redis.create
-
-      status 200
-      return redis.body.to_json
-    else
-      status 404
-      {
-        "message": " We can't fund the player",
-        "data": 'no data'
-      }.to_json
-    end
+    json_response({ "message": " We can't fund the player", "data": 'no data' }, 404)
   end
+end
+get '/weapons' do
+  json_response(Pubg.class_variable_get(:@@weapons), 200)
 end
