@@ -1,2 +1,2 @@
 # SinatraRedisPUBG
-A small Api to consume the API of PUBG xbox TPP and get stats and masteries of the weapons 
+A small service to consume the PUBG API xbox TPP and get stats and masteries of the weapons 
