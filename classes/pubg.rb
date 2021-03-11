@@ -53,6 +53,7 @@ class Pubg
   attr_accessor :userid
   attr_reader :stats
   attr_reader :mastery
+  attr_reader :weapons
 
   def initialize(gametag, userid = nil)
     @gametag = gametag

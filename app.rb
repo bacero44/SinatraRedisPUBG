@@ -4,12 +4,15 @@ require 'sinatra'
 require 'sinatra/reloader' if development?
 require 'json'
 require 'yaml'
+require_relative('helpers')
 # 3600 === 1 hour
 REFRESHMENT_TIME = 3600
 Dir[settings.root + '/classes/*.rb'].sort.each { |file| require file }
-get '/player/:nametag' do
+before do
   content_type :json
   headers 'Access-Control-Allow-Origin' => '*'
+end
+get '/player/:nametag' do
   nametag = params[:nametag]
   redis = Redis.new(nametag)
 
@@ -21,8 +24,7 @@ get '/player/:nametag' do
       redis.body = { "mastery": pubg.mastery, "stats": pubg.stats }
       redis.update
     end
-    status 200
-    return redis.body.to_json
+    json_response(redis.body, 200)
 
   else
     pubg = Pubg.new(nametag)
@@ -33,14 +35,17 @@ get '/player/:nametag' do
       redis.userid = pubg.userid
       redis.create
 
-      status 200
-      return redis.body.to_json
+      json_response(redis.body, 200)
     else
-      status 404
-      {
-        "message": " We can't fund the player",
-        "data": 'no data'
-      }.to_json
+      json_response({
+                      "message": " We can't fund the player",
+                      "data": 'no data'
+                    }, 404)
+
     end
   end
+end
+
+get '/weapons' do
+  json_response(Pubg.class_variable_get(:@@weapons), 200)
 end
