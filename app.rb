@@ -10,6 +10,7 @@ Dir[settings.root + '/classes/*.rb'].sort.each { |file| require file }
 before do
   content_type :json
   headers 'Access-Control-Allow-Origin' => '*'
+  #sleep(2)
 end
 get '/player/:nametag' do
   player = Player.new(params[:nametag])

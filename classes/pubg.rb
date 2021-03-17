@@ -63,8 +63,18 @@ class Pubg
     def get_stats(userid)
       response = request("https://api.pubg.com/shards/xbox/players/#{userid}/seasons/lifetime")
       if response
+
+        puts response
+        puts '///////////////////////////////////////////////////'
+        puts response['relationships']['matchesDuo']
+        puts '--------------------------------------------------------------------'
+        puts response['relationships']['matchesSquad']['data']
+        puts '--------------------------------------------------------------------'
+        puts response['relationships']['matchesSolo']['data']
+        puts '///////////////////////////////////////////////////'
+
         response = response['attributes']['gameModeStats']
-        seter_stats(response)
+        set_stats(response)
       else
         false
       end
@@ -74,7 +84,7 @@ class Pubg
       response = request("https://api.pubg.com/shards/xbox/players/#{userid}/weapon_mastery")
       if response
         response = response['attributes']['weaponSummaries']
-        seter_mastery(response)
+        set_mastery(response)
       else
         false
       end
@@ -96,7 +106,7 @@ class Pubg
       end
     end
 
-    def seter_stats(payload)
+    def set_stats(payload)
       stats = []
       @@game_types.each do |g|
         stats.push({
@@ -115,7 +125,7 @@ class Pubg
       stats
     end
 
-    def seter_mastery(payload)
+    def set_mastery(payload)
       mastery = []
       @@weapons.each do |w|
         m = payload[w[:api_name]]

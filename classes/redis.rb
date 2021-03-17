@@ -34,5 +34,4 @@ class Redis
       REDIS.json_set(player.nametag, 'date', Time.new)
     end
   end
-
 end
