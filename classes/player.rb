@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # 3600 === 1 hour
-REFRESHMENT_TIME = 3600
+REFRESHMENT_TIME = 5
 class Player
   attr_reader :nametag
   attr_reader :userid
@@ -25,6 +25,10 @@ class Player
     else
       false
     end
+  end
+
+  def matches
+    Match.get(@userid)
   end
 
   private
