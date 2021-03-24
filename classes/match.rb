@@ -8,13 +8,13 @@ class Match
     def get(userid)
       m = COLLECTION.find({ userid: userid })
       if m.count.positive?
-        m.first['matches']
+        m.first['matches'].sort_by { |hsh| hsh['date'] }.reverse
       else
         {}
       end
     end
 
-    def get_matches(userid)
+    def get_matches_ids(userid)
       get(userid).map { |x| x['id'] }
     end
 
@@ -40,6 +40,36 @@ class Match
       end
     end
 
+    def set_match(id, userid, match, payload)
+      teams = payload.select { |x| x['type'] == 'roster' }
+      players_list = payload.select { |x| x['type'] == 'participant' }
+      player = get_player(players_list, userid)
+
+      team = match['gameMode'] == 'solo' ? false : set_team(teams, player['id'], players_list)
+
+      {
+        id: id,
+        map: match['mapName'],
+        date: match['createdAt'],
+        mode: match['gameMode'],
+        kills: player['attributes']['stats']['kills'],
+        place: player['attributes']['stats']['winPlace'],
+        team: team
+      }
+    end
+
+    def save_matches(userid, matches)
+      current_matches = get_matches_ids(userid)
+      matches.each do |m|
+        next if current_matches.include? m && !current_matches.empty?
+
+        match = {}
+        response = Pubg.get_match(m)
+        match = set_match(m, userid, response['data']['attributes'], response['included']) if response
+        Match.add(userid, match)
+      end
+    end
+
     private
 
     def exist?(userid)
@@ -48,6 +78,34 @@ class Match
         true
       else
         false
+      end
+    end
+
+    def set_team(teams, id, players)
+      team = get_team_ids(teams, id)
+      response = []
+      team.each do |t|
+        x = get_player(players, t, true)
+        response.push({
+                        "gametag": x['attributes']['stats']['name'],
+                        "kills": x['attributes']['stats']['kills'],
+                        "kill_place": x['attributes']['stats']['killPlace'],
+                        "console": x['attributes']['shardId']
+                      })
+      end
+      response
+    end
+
+    def get_team_ids(teams, player)
+      team = teams.select { |t| t['relationships']['participants']['data'].any? { |x| x['id'] == player } }
+      team.last['relationships']['participants']['data'].map { |t| t['id'] }
+    end
+
+    def get_player(players_list, id, by_playerid = false)
+      if by_playerid
+        players_list.select { |x| x['id'] == id }.last
+      else
+        players_list.select { |x| x['attributes']['stats']['playerId'] == id }.last
       end
     end
   end

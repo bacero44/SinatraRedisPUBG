@@ -63,12 +63,7 @@ class Pubg
     def get_stats(userid)
       response = request("https://api.pubg.com/shards/xbox/players/#{userid}/seasons/lifetime")
       if response
-        # TODO: GET ONLY first 20 as max per type
-        duo = response['relationships']['matchesDuo']['data'].map { |d| d['id'] }
-        squad = response['relationships']['matchesSquad']['data'].map { |d| d['id'] }
-        solo = response['relationships']['matchesSolo']['data'].map { |d| d['id'] }
-        matches = [duo, squad, solo].reduce([], :concat)
-        save_matches(userid, matches)
+        Match.save_matches(userid, join_matches(response))
         set_stats(response['attributes']['gameModeStats'])
       else
         false
@@ -83,6 +78,10 @@ class Pubg
       else
         false
       end
+    end
+
+    def get_match(id)
+      request("https://api.pubg.com/shards/steam/matches/#{id}", true)
     end
 
     private
@@ -143,29 +142,11 @@ class Pubg
       mastery
     end
 
-    def save_matches(userid, payload)
-      current_matches = Match.get_matches(userid)
-      payload.each do |m|
-        next if current_matches.include? m && !current_matches.empty?
-
-        match = {}
-        response = request("https://api.pubg.com/shards/steam/matches/#{m}", true)
-        match = set_match(m, userid, response['data']['attributes'], response['included']) if response
-        Match.add(userid, match)
-      end
-    end
-
-    def set_match(id, userid, match, player)
-      player = player.select { |x| x['type'] == 'participant' }
-      player = player.select { |x| x['attributes']['stats']['playerId'] == userid }
-      {
-        id: id,
-        map: match['mapName'],
-        date: match['createdAt'],
-        mode: match['gameMode'],
-        kills: player.last['attributes']['stats']['kills'],
-        place: player.last['attributes']['stats']['winPlace']
-      }
+    def join_matches(response)
+      duo = response['relationships']['matchesDuo']['data'].map { |d| d['id'] }
+      squad = response['relationships']['matchesSquad']['data'].map { |d| d['id'] }
+      solo = response['relationships']['matchesSolo']['data'].map { |d| d['id'] }
+      [duo, squad, solo].reduce([], :concat)
     end
   end
 end
