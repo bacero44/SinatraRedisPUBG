@@ -81,13 +81,13 @@ class Pubg
     end
 
     def get_match(id)
-      request("https://api.pubg.com/shards/steam/matches/#{id}", true)
+      request("https://api.pubg.com/shards/xbox/matches/#{id}", true)
     end
 
     private
 
     def request(url, only_data = false)
-      puts '++++CALL PUBG API++++++++++++++'
+      puts "++++CALL PUBG API FROM:#{caller[0][/`.*'/][1..-2]}+++++++++++++"
       response = HTTParty.get(url, headers: {
                                 'Content-Type' => 'application/json',
                                 'accept' => 'application/vnd.api+json',

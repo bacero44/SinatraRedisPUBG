@@ -3,6 +3,18 @@
 require 'mongo'
 MONGO = Mongo::Client.new(['127.0.0.1:27017'], database: 'pubg')
 COLLECTION = MONGO[:players]
+
+MAPS = {
+  "Baltic_Main": 'Erangel',
+  "Chimera_Main": 'Paramo',
+  "Desert_Main": 'Miramar',
+  "DihorOtok_Main": 'Vikendi',
+  "Erangel_Main": 'Erangel',
+  "Heaven_Main": 'Haven',
+  "Range_Main": 'Camp Jackal',
+  "Savage_Main": 'Sanhok',
+  "Summerland_Main": 'Karakin'
+}.freeze
 class Match
   class << self
     def get(userid)
@@ -43,25 +55,27 @@ class Match
     def set_match(id, userid, match, payload)
       teams = payload.select { |x| x['type'] == 'roster' }
       players_list = payload.select { |x| x['type'] == 'participant' }
+      telemetry = payload.select { |x| x['type'] == 'asset' }
       player = get_player(players_list, userid)
 
       team = match['gameMode'] == 'solo' ? false : set_team(teams, player['id'], players_list)
 
       {
         id: id,
-        map: match['mapName'],
+        map: get_realname_map(match['mapName']),
         date: match['createdAt'],
         mode: match['gameMode'],
         kills: player['attributes']['stats']['kills'],
         place: player['attributes']['stats']['winPlace'],
-        team: team
+        team: team,
+        telemetry: telemetry[0]['attributes']['URL']
       }
     end
 
     def save_matches(userid, matches)
       current_matches = get_matches_ids(userid)
       matches.each do |m|
-        next if current_matches.include? m && !current_matches.empty?
+        next if current_matches.include?(m) && !current_matches.empty?
 
         match = {}
         response = Pubg.get_match(m)
@@ -107,6 +121,10 @@ class Match
       else
         players_list.select { |x| x['attributes']['stats']['playerId'] == id }.last
       end
+    end
+
+    def get_realname_map(name)
+      MAPS[name.to_sym]
     end
   end
 end
